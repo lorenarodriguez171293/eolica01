@@ -69,9 +69,52 @@
             border: 2px dashed #007bff; 
             border-radius: 8px; 
             min-height: 400px;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .simulator-placeholder-text { color: #007bff; font-style: italic; margin-top: 20px; }
+        .simulator-control { 
+            margin-bottom: 20px; 
+            width: 80%; 
+            max-width: 500px; 
+            text-align: left;
+            padding: 15px;
+            background-color: #d1e7ff;
+            border-radius: 8px;
+        }
+        .simulator-control label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .simulator-control input[type="range"] { width: 100%; }
+        .simulator-output { 
+            font-size: 1.2em; 
+            font-weight: bold; 
+            color: #1a5c92; 
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #1a5c92;
+            border-radius: 4px;
+            background-color: #f8fbfc;
+        }
+
+        /* Estilos específicos para la visualización del simulador */
+        .visual-representation {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            color: white;
+            transition: all 0.5s ease-in-out;
+            margin-top: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        /* Colores visuales */
+        .viz-hydro { background-color: #00bcd4; }
+        .viz-nuclear { background-color: #4caf50; }
+        .viz-solar { background-color: #ffc107; }
+        .viz-eolic { background-color: #9e9e9e; }
+        .viz-bio { background-color: #8bc34a; }
 
     </style>
 </head>
@@ -83,14 +126,16 @@
 
     <div class="container">
 
+        <!-- --- SECCIÓN PRINCIPAL: MATRIZ ENERGÉTICA --- -->
         <section id="matriz" class="content-section active">
             <h2>📊 Composición de la Oferta Interna de Energía Primaria</h2>
-            <p>La matriz energética de Argentina muestra la dependencia histórica de los combustibles fósiles, con un crecimiento constante de las energías renovables, impulsado por leyes como la 27.191.</p>
+            <p>La matriz energética de Argentina muestra la dependencia histórica de los combustibles fósiles (Gas y Petróleo), que constituyen más del 80% del total. La participación de las fuentes alternativas, impulsadas por la Ley 27.191, crece anualmente y se concentra en la energía eólica y solar.</p>
 
             <div class="matriz-viz">
                 <h3>Distribución por Fuente (Datos Ilustrativos)</h3>
                 <ul class="data-list" id="matriz-data-list">
-                    </ul>
+                    <!-- Datos de la matriz se inyectarán aquí con JavaScript -->
+                </ul>
             </div>
 
             <h2 style="margin-top: 40px;">🧪 Acceso a Simuladores de Energías Alternativas</h2>
@@ -103,85 +148,166 @@
             </div>
         </section>
 
+        <!-- --- SECCIÓN HIDROELÉCTRICA --- -->
         <section id="hidro" class="content-section">
             <button class="back-button" onclick="showSection('matriz');">⬅️ Volver a la Matriz</button>
             <h2>💧 Energía Hidroeléctrica</h2>
             
             <h3>Descripción Breve</h3>
-            <p>Utiliza el movimiento del agua, generalmente almacenada en represas, para mover turbinas. En Argentina, es la principal fuente renovable de base, con complejos como Yacyretá y Salto Grande. Es una fuente eficiente y de baja emisión, pero con alto impacto ambiental y social en su construcción.</p>
+            <p><strong>Descripción:</strong> Utiliza el movimiento del agua, generalmente almacenada en represas, para mover turbinas. En Argentina, es la principal fuente renovable de base (no intermitente), con complejos como Yacyretá. Es eficiente pero su impacto ambiental en ecosistemas fluviales es alto.</p>
 
-            <h3>Simulador Interactivo: Funcionamiento de una Central</h3>
+            <h3>Simulador Interactivo: Nivel del Embalse</h3>
             <div class="simulator-area" id="simulador-hidro">
-                <p class="simulator-placeholder-text">**Aquí se integraría el SIMULADOR INTERACTIVO.**</p>
-                <p>Para crear un simulador funcional, necesitarás código más avanzado (JavaScript, Canvas/SVG). Un ejemplo podría ser un deslizador para controlar la altura de la represa y ver cómo cambia la potencia generada.</p>
-                <p>_[Espacio para el código HTML/JS/CSS del simulador hidroeléctrico]_</p>
+                <p>Mueve el deslizador para simular cómo un cambio en el nivel del embalse afecta la potencia generada.</p>
+                
+                <!-- Ilustración del Embalse y sus Partes -->
+                [Image of represa hidroeléctrica con sus partes principales]
+
+                <div class="simulator-control">
+                    <label for="embalse-level">Nivel del Embalse (metros)</label>
+                    <input type="range" id="embalse-level" min="50" max="100" value="75" oninput="simulateHydro(this.value)">
+                    <p>Nivel Actual: <span id="current-level">75</span> m</p>
+                </div>
+                
+                <div class="visual-representation viz-hydro" id="hydro-viz">
+                    💧
+                </div>
+                
+                <div class="simulator-output">
+                    Potencia Generada: <span id="hydro-output">0.00</span> MW
+                </div>
             </div>
         </section>
 
+        <!-- --- SECCIÓN NUCLEAR --- -->
         <section id="nuclear" class="content-section">
             <button class="back-button" onclick="showSection('matriz');">⬅️ Volver a la Matriz</button>
             <h2>⚛️ Energía Nuclear</h2>
             
             <h3>Descripción Breve</h3>
-            <p>Se genera mediante la fisión atómica controlada del uranio. En Argentina, es una fuente de base (genera 24/7) y de baja emisión de carbono, clave para la estabilidad del sistema. Las centrales principales son Atucha I, Atucha II y Embalse.</p>
+            <p><strong>Descripción:</strong> Se genera mediante la fisión atómica controlada del uranio. En Argentina, es una fuente de base (genera 24/7) y de baja emisión de carbono, clave para la estabilidad del sistema. Las centrales principales son Atucha I, Atucha II y Embalse.</p>
 
-            <h3>Simulador Interactivo: Reacción en Cadena Controlada</h3>
+            <h3>Simulador Interactivo: Control de Reactor</h3>
             <div class="simulator-area" id="simulador-nuclear">
-                <p class="simulator-placeholder-text">**Aquí se integraría el SIMULADOR INTERACTIVO.**</p>
-                <p>El simulador podría ilustrar las barras de control absorbiendo neutrones para moderar la reacción de fisión y mantenerla estable.</p>
-                <p>_[Espacio para el código HTML/JS/CSS del simulador nuclear]_</p>
+                <p>Ajusta el nivel de las barras de control para simular la estabilidad del reactor.</p>
+
+                <!-- Ilustración del Reactor Nuclear y sus Partes -->
+                
+
+                <div class="simulator-control">
+                    <label for="control-rods">Posición de Barras de Control (%)</label>
+                    <input type="range" id="control-rods" min="10" max="90" value="50" oninput="simulateNuclear(this.value)">
+                    <p>Barras Retiradas: <span id="current-rods">50</span>%</p>
+                </div>
+                
+                <div class="visual-representation viz-nuclear" id="nuclear-viz">
+                    ⚛️
+                </div>
+                
+                <div class="simulator-output">
+                    Estabilidad del Reactor: <span id="nuclear-output">Estable</span>
+                </div>
             </div>
         </section>
 
+        <!-- --- SECCIÓN FOTOVOLTAICA --- -->
         <section id="fotovoltaica" class="content-section">
             <button class="back-button" onclick="showSection('matriz');">⬅️ Volver a la Matriz</button>
             <h2>☀️ Energía Fotovoltaica</h2>
             
             <h3>Descripción Breve</h3>
-            <p>Convierte la luz solar directamente en electricidad mediante el efecto fotovoltaico en paneles de silicio. Argentina posee un potencial solar inmenso, especialmente en el NOA, con proyectos gigantes como Cauchari (Jujuy).</p>
+            <p><strong>Descripción:</strong> Convierte la luz solar directamente en electricidad mediante el efecto fotovoltaico en paneles de silicio. Argentina posee un potencial solar inmenso, especialmente en el NOA (ej. Cauchari, Jujuy).</p>
 
-            <h3>Simulador Interactivo: Producción vs. Ángulo e Irradiación</h3>
+            <h3>Simulador Interactivo: Irradiación Solar</h3>
             <div class="simulator-area" id="simulador-fotovoltaica">
-                <p class="simulator-placeholder-text">**Aquí se integraría el SIMULADOR INTERACTIVO.**</p>
-                <p>El usuario podría cambiar el ángulo de inclinación del panel o simular la hora del día para ver el gráfico de la producción de energía.</p>
-                <p>_[Espacio para el código HTML/JS/CSS del simulador fotovoltaico]_</p>
+                <p>Simula la intensidad de la luz solar (irradiación) que llega al panel.</p>
+
+                <!-- Ilustración del Panel Solar y Radiación -->
+                
+                
+                <div class="simulator-control">
+                    <label for="solar-intensity">Intensidad Solar (W/m²)</label>
+                    <input type="range" id="solar-intensity" min="0" max="1000" value="700" step="50" oninput="simulateSolar(this.value)">
+                    <p>Irradiación Actual: <span id="current-intensity">700</span> W/m²</p>
+                </div>
+                
+                <div class="visual-representation viz-solar" id="solar-viz">
+                    ☀️
+                </div>
+                
+                <div class="simulator-output">
+                    Producción Eléctrica Estimada: <span id="solar-output">0.00</span> kWh
+                </div>
             </div>
         </section>
 
+        <!-- --- SECCIÓN EÓLICA --- -->
         <section id="eolica" class="content-section">
             <button class="back-button" onclick="showSection('matriz');">⬅️ Volver a la Matriz</button>
             <h2>🌬️ Energía Eólica</h2>
             
             <h3>Descripción Breve</h3>
-            <p>Aprovecha la energía cinética del viento para mover las palas de los aerogeneradores. La Patagonia es un área de clase mundial para esta tecnología debido a la constancia y velocidad del viento. Es una de las energías de mayor crecimiento en el país.</p>
+            <p><strong>Descripción:</strong> Aprovecha la energía cinética del viento para mover las palas de los aerogeneradores. La Patagonia es un área de clase mundial para esta tecnología debido a la constancia y velocidad del viento. Es una de las energías de mayor crecimiento en el país.</p>
 
-            <h3>Simulador Interactivo: Potencia vs. Velocidad del Viento</h3>
+            <h3>Simulador Interactivo: Velocidad del Viento</h3>
             <div class="simulator-area" id="simulador-eolica">
-                <p class="simulator-placeholder-text">**Aquí se integraría el SIMULADOR INTERACTIVO.**</p>
-                <p>Un medidor de viento simulado que muestre la relación no lineal entre la velocidad del viento y la potencia que entrega el aerogenerador (curva de potencia).</p>
-                <p>_[Espacio para el código HTML/JS/CSS del simulador eólico]_</p>
+                <p>Ajusta la velocidad del viento para ver cómo cambia la potencia generada.</p>
+
+                <!-- Ilustración del Aerogenerador y Viento -->
+                
+                
+                <div class="simulator-control">
+                    <label for="wind-speed">Velocidad del Viento (m/s)</label>
+                    <input type="range" id="wind-speed" min="0" max="25" value="12" oninput="simulateWind(this.value)">
+                    <p>Velocidad Actual: <span id="current-wind">12</span> m/s</p>
+                </div>
+                
+                <div class="visual-representation viz-eolic" id="wind-viz">
+                    🌬️
+                </div>
+                
+                <div class="simulator-output">
+                    Potencia Generada: <span id="wind-output">0.00</span> kW
+                </div>
             </div>
         </section>
 
+        <!-- --- SECCIÓN BIOCOMBUSTIBLES --- -->
         <section id="biocombustibles" class="content-section">
             <button class="back-button" onclick="showSection('matriz');">⬅️ Volver a la Matriz</button>
             <h2>🌱 Biocombustibles</h2>
             
             <h3>Descripción Breve</h3>
-            <p>Combustibles líquidos derivados de biomasa (materia orgánica), como el biodiésel (de aceite de soja) y el bioetanol (de maíz o caña de azúcar). Argentina es líder mundial en producción de biodiésel. Se usan para mezcla obligatoria con combustibles fósiles en el transporte.</p>
+            <p><strong>Descripción:</strong> Combustibles líquidos derivados de biomasa (materia orgánica), como el biodiésel (de aceite de soja) y el bioetanol (de maíz o caña de azúcar). Argentina es líder mundial en producción de biodiésel. Se usan para mezcla obligatoria (corte) con combustibles fósiles en el transporte.</p>
 
-            <h3>Simulador Interactivo: Proceso de Producción Simplificado</h3>
+            <h3>Simulador Interactivo: Porcentaje de Mezcla (Blend)</h3>
             <div class="simulator-area" id="simulador-biocombustibles">
-                <p class="simulator-placeholder-text">**Aquí se integraría el SIMULADOR INTERACTIVO.**</p>
-                <p>Una línea de tiempo donde se activan los pasos (siembra, cosecha, procesamiento, resultado final) y se muestra el balance energético del proceso.</p>
-                <p>_[Espacio para el código HTML/JS/CSS del simulador de biocombustibles]_</p>
+                <p>Simula el porcentaje de biocombustible mezclado con el combustible fósil tradicional.</p>
+
+                <!-- Ilustración de la Obtención de Biocombustibles -->
+                
+
+                <div class="simulator-control">
+                    <label for="blend-percent">Porcentaje de Biodiésel (B%)</label>
+                    <input type="range" id="blend-percent" min="5" max="20" value="10" step="1" oninput="simulateBio(this.value)">
+                    <p>Mezcla Actual: <span id="current-blend">10</span>%</p>
+                </div>
+                
+                <div class="visual-representation viz-bio" id="bio-viz">
+                    🌱
+                </div>
+                
+                <div class="simulator-output">
+                    Reducción Estimada de CO₂: <span id="bio-output">0.00</span> kg/L
+                </div>
             </div>
         </section>
 
     </div>
 
+    <!-- Script para la Navegación, Matriz de Datos y Simulaciones -->
     <script>
-        // 1. Datos de ejemplo simulados para la matriz energética
+        // --- 1. DATOS DE LA MATRIZ (INICIO) ---
         const matrizData = [
             { name: "Gas Natural", percentage: 52.0, class: "gas" },
             { name: "Petróleo y Derivados", percentage: 31.0, class: "oil" },
@@ -193,13 +319,11 @@
 
         const listContainer = document.getElementById('matriz-data-list');
 
-        // 2. Función para renderizar el "gráfico" de la matriz (barras de progreso)
         function renderMatrizData() {
             matrizData.forEach(item => {
                 const listItem = document.createElement('li');
                 listItem.classList.add('data-item');
 
-                // Usamos la propiedad 'style' de la barra de progreso para darle el ancho %
                 listItem.innerHTML = `
                     <span class="source-name">${item.name}</span>
                     <span class="percentage">${item.percentage.toFixed(1)}%</span>
@@ -212,24 +336,157 @@
             });
         }
         
-        // 3. Función JavaScript para manejar la navegación entre secciones (Pestañas)
+        // --- 2. FUNCIÓN DE NAVEGACIÓN ---
         function showSection(sectionId) {
-            // Ocultar todas las secciones
             var sections = document.querySelectorAll('.content-section');
             sections.forEach(function(section) {
                 section.classList.remove('active');
             });
-
-            // Mostrar la sección deseada
             var activeSection = document.getElementById(sectionId);
             if (activeSection) {
                 activeSection.classList.add('active');
             }
         }
+        
+        // --- 3. FUNCIONES DE SIMULACIÓN ---
 
-        // 4. Iniciar la aplicación al cargar la página
+        // SIMULADOR HIDROELÉCTRICA
+        function simulateHydro(level) {
+            const outputElement = document.getElementById('hydro-output');
+            const levelDisplay = document.getElementById('current-level');
+            const viz = document.getElementById('hydro-viz');
+            
+            // Fórmula simple: Potencia es proporcional al nivel y su cuadrado (Head of Water)
+            // (level - 50) es el head effectivo. Potencia máxima a 100m.
+            const basePower = 500; // MW base
+            const effectiveHead = level - 50;
+            let power = 0;
+            
+            if (effectiveHead > 0) {
+                // Relación no lineal: Potencia ≈ Flujo * Altura
+                power = basePower * (effectiveHead / 50) * (effectiveHead / 50);
+            }
+            
+            levelDisplay.textContent = level;
+            outputElement.textContent = power.toFixed(2);
+
+            // Ajuste visual (tamaño del icono)
+            viz.style.transform = `scale(${1 + (power / (basePower * 2))})`;
+        }
+
+        // SIMULADOR NUCLEAR
+        function simulateNuclear(rods) {
+            const outputElement = document.getElementById('nuclear-output');
+            const rodsDisplay = document.getElementById('current-rods');
+            const viz = document.getElementById('nuclear-viz');
+
+            rodsDisplay.textContent = rods;
+            
+            let status;
+            let color;
+
+            if (rods < 30) {
+                status = "Crítica (Sobrecarga)";
+                color = "red";
+            } else if (rods >= 30 && rods <= 70) {
+                status = "Estable (Generación Óptima)";
+                color = "green";
+            } else {
+                status = "Infradotada (Baja Potencia)";
+                color = "orange";
+            }
+            
+            outputElement.textContent = status;
+            outputElement.style.color = color;
+            viz.style.backgroundColor = color;
+            viz.style.transform = `rotate(${rods * 3}deg)`;
+        }
+
+        // SIMULADOR FOTOVOLTAICA
+        function simulateSolar(intensity) {
+            const outputElement = document.getElementById('solar-output');
+            const intensityDisplay = document.getElementById('current-intensity');
+            const viz = document.getElementById('solar-viz');
+            
+            // Fórmula simple: Producción es directamente proporcional a la intensidad
+            const panelArea = 10; // m²
+            const efficiency = 0.18; // 18% de eficiencia
+            // Producción = Intensidad * Área * Eficiencia * Factor de Pérdida
+            const power = (intensity / 1000) * panelArea * efficiency * 0.85; 
+            
+            intensityDisplay.textContent = intensity;
+            outputElement.textContent = power.toFixed(2);
+
+            // Ajuste visual (brillo y tamaño)
+            viz.style.filter = `brightness(${0.5 + intensity / 1000})`;
+            viz.style.transform = `scale(${1 + power * 0.5})`;
+        }
+
+        // SIMULADOR EÓLICA
+        function simulateWind(speed) {
+            const outputElement = document.getElementById('wind-output');
+            const windDisplay = document.getElementById('current-wind');
+            const viz = document.getElementById('wind-viz');
+            
+            // Fórmula de potencia eólica: Potencia ∝ Velocidad³
+            let power = 0;
+            const cutInSpeed = 3; // m/s (Velocidad mínima)
+            const ratedSpeed = 15; // m/s (Velocidad de potencia nominal)
+            const cutOutSpeed = 25; // m/s (Velocidad de corte)
+            const maxPower = 3000; // kW
+
+            if (speed >= cutInSpeed && speed < ratedSpeed) {
+                // Curva cubica hasta la velocidad nominal
+                power = maxPower * Math.pow((speed - cutInSpeed) / (ratedSpeed - cutInSpeed), 3);
+            } else if (speed >= ratedSpeed && speed < cutOutSpeed) {
+                // Potencia nominal
+                power = maxPower;
+            } else if (speed >= cutOutSpeed) {
+                // Detenido por seguridad
+                power = 0;
+            }
+            
+            windDisplay.textContent = speed;
+            outputElement.textContent = power.toFixed(2);
+            
+            // Ajuste visual (rotación y opacidad)
+            viz.style.transform = `rotate(${speed * 50}deg) scale(${0.8 + power / (maxPower * 2)})`;
+            viz.style.opacity = power > 0 ? 1 : 0.5;
+        }
+
+        // SIMULADOR BIOCOMBUSTIBLES
+        function simulateBio(blend) {
+            const outputElement = document.getElementById('bio-output');
+            const blendDisplay = document.getElementById('current-blend');
+            const viz = document.getElementById('bio-viz');
+            
+            // Fórmula simple: Reducción de CO2 proporcional al porcentaje de blend
+            const baseFossilCO2 = 2.6; // kg CO2/L para diesel
+            const bioReductionFactor = 0.9; // % de reducción por biodiesel
+            
+            // CO2 Ahorrado = Blend * BaseCO2 * BioReductionFactor
+            const co2Saved = (blend / 100) * baseFossilCO2 * bioReductionFactor;
+            
+            blendDisplay.textContent = blend;
+            outputElement.textContent = co2Saved.toFixed(3);
+
+            // Ajuste visual (color según el blend)
+            const colorValue = Math.min(255, 100 + (blend * 8));
+            viz.style.backgroundColor = `rgb(139, ${colorValue}, 74)`;
+        }
+
+
+        // 4. INICIAR LA APLICACIÓN Y SIMULACIONES
         document.addEventListener('DOMContentLoaded', () => {
             renderMatrizData();
+            
+            // Inicializar las simulaciones al cargar la página
+            // Esto asegura que la salida (output) muestre el valor inicial
+            simulateHydro(document.getElementById('embalse-level').value);
+            simulateNuclear(document.getElementById('control-rods').value);
+            simulateSolar(document.getElementById('solar-intensity').value);
+            simulateWind(document.getElementById('wind-speed').value);
+            simulateBio(document.getElementById('blend-percent').value);
         });
     </script>
 
