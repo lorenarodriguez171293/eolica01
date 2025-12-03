@@ -1,1 +1,137 @@
-# energiasalternativas
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energías Alternativas en Argentina - Simuladores</title>
+    <style>
+        /* CSS básico para la estructura y la navegación */
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
+        header { background-color: #004d99; color: white; padding: 20px; text-align: center; }
+        .container { width: 90%; margin: 20px auto; }
+        .nav-buttons button { background-color: #007bff; color: white; border: none; padding: 10px 15px; margin: 5px; cursor: pointer; border-radius: 5px; transition: background-color 0.3s; }
+        .nav-buttons button:hover { background-color: #0056b3; }
+        .content-section { display: none; /* Ocultar todas las secciones por defecto */
+                          padding: 20px; border: 1px solid #ccc; background-color: white; margin-top: 15px; border-radius: 8px;}
+        .content-section.active { display: block; /* Mostrar la sección activa */ }
+        .simulator-area { background-color: #e9ecef; padding: 15px; margin-top: 15px; border-radius: 5px; min-height: 300px; }
+        .back-button { margin-bottom: 15px; background-color: #6c757d !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Energías Alternativas en Argentina 🇦🇷</h1>
+    </header>
+
+    <div class="container">
+
+        <section id="home" class="content-section active">
+            <h2>🌍 Explora y Simula las Energías Renovables</h2>
+            <p>Selecciona una energía para ver su descripción y acceder a un simulador interactivo.</p>
+            
+            <div class="nav-buttons">
+                <button onclick="showSection('hidro');">💧 Energía Hidroeléctrica</button>
+                <button onclick="showSection('nuclear');">⚛️ Energía Nuclear</button>
+                <button onclick="showSection('fotovoltaica');">☀️ Energía Fotovoltaica</button>
+                <button onclick="showSection('eolica');">🌬️ Energía Eólica</button>
+                <button onclick="showSection('biocombustibles');">🌱 Biocombustibles</button>
+            </div>
+        </section>
+
+        <section id="hidro" class="content-section">
+            <button class="back-button" onclick="showSection('home');">⬅️ Volver al Menú Principal</button>
+            <h2>💧 Energía Hidroeléctrica</h2>
+            
+            <h3>Descripción Breve</h3>
+            <p>La **Energía Hidroeléctrica** utiliza la fuerza del agua en movimiento, generalmente represada, para hacer girar turbinas conectadas a generadores. En Argentina, grandes represas como Yacyretá y Salto Grande son fundamentales para la matriz energética. Es una fuente renovable, pero su impacto ambiental en ecosistemas fluviales es significativo.</p>
+
+            <h3>Simulador Interactivo: Funcionamiento de una Central</h3>
+            <div class="simulator-area" id="simulador-hidro">
+                <p>Aquí se añadiría el **código JavaScript y HTML** para el simulador interactivo.</p>
+                <p>Ejemplo: Un deslizador que controle el flujo de agua y muestre cómo aumenta o disminuye la generación de energía.</p>
+                <p>_[Este contenido requiere programación en JavaScript, posiblemente usando bibliotecas como D3.js o Canvas/SVG.]_</p>
+                </div>
+        </section>
+
+        <section id="nuclear" class="content-section">
+            <button class="back-button" onclick="showSection('home');">⬅️ Volver al Menú Principal</button>
+            <h2>⚛️ Energía Nuclear</h2>
+            
+            <h3>Descripción Breve</h3>
+            <p>La **Energía Nuclear** se genera mediante la fisión de átomos de uranio en reactores controlados. En Argentina, el sector nuclear tiene una larga trayectoria con centrales como Atucha I, Atucha II y Embalse. Aunque no es renovable, se considera una fuente de baja emisión de carbono y de base, crucial para la estabilidad del suministro eléctrico.</p>
+
+            <h3>Simulador Interactivo: Reacción en Cadena Controlada</h3>
+            <div class="simulator-area" id="simulador-nuclear">
+                <p>Aquí se añadiría el **código JavaScript y HTML** para el simulador interactivo.</p>
+                <p>Ejemplo: Un modelo simplificado donde el usuario puede ajustar las barras de control para mantener la reacción de fisión estable.</p>
+                <p>_[Este contenido requiere programación en JavaScript, posiblemente usando bibliotecas como D3.js o Canvas/SVG.]_</p>
+                </div>
+        </section>
+
+        <section id="fotovoltaica" class="content-section">
+            <button class="back-button" onclick="showSection('home');">⬅️ Volver al Menú Principal</button>
+            <h2>☀️ Energía Fotovoltaica</h2>
+            
+            <h3>Descripción Breve</h3>
+            <p>La **Energía Fotovoltaica** convierte directamente la luz solar en electricidad usando paneles compuestos de células de silicio (el efecto fotovoltaico). Argentina tiene un gran potencial solar, especialmente en el Noroeste. Su implementación es clave en proyectos como el Parque Solar Cauchari en Jujuy.</p>
+
+            <h3>Simulador Interactivo: Producción vs. Ángulo y Nube</h3>
+            <div class="simulator-area" id="simulador-fotovoltaica">
+                <p>Aquí se añadiría el **código JavaScript y HTML** para el simulador interactivo.</p>
+                <p>Ejemplo: El usuario ajusta el ángulo del panel o simula la cobertura de nubes para ver cómo afecta la potencia de salida (watts).</p>
+                <p>_[Este contenido requiere programación en JavaScript.]_</p>
+                </div>
+        </section>
+
+        <section id="eolica" class="content-section">
+            <button class="back-button" onclick="showSection('home');">⬅️ Volver al Menú Principal</button>
+            <h2>🌬️ Energía Eólica</h2>
+            
+            <h3>Descripción Breve</h3>
+            <p>La **Energía Eólica** utiliza la fuerza del viento para mover las palas de aerogeneradores, los cuales están conectados a un generador eléctrico. La Patagonia Argentina es una de las regiones con mayor recurso eólico del mundo, lo que la convierte en un pilar para el desarrollo de esta fuente renovable en el país.</p>
+
+            <h3>Simulador Interactivo: Potencia vs. Velocidad del Viento</h3>
+            <div class="simulator-area" id="simulador-eolica">
+                <p>Aquí se añadiría el **código JavaScript y HTML** para el simulador interactivo.</p>
+                <p>Ejemplo: Un medidor de velocidad del viento (simulado) que muestra cómo la potencia generada aumenta (hasta el punto de corte) o disminuye.</p>
+                <p>_[Este contenido requiere programación en JavaScript.]_</p>
+                </div>
+        </section>
+
+        <section id="biocombustibles" class="content-section">
+            <button class="back-button" onclick="showSection('home');">⬅️ Volver al Menú Principal</button>
+            <h2>🌱 Biocombustibles</h2>
+            
+            <h3>Descripción Breve</h3>
+            <p>Los **Biocombustibles** (principalmente Biodiésel y Bioetanol) son combustibles líquidos derivados de materia orgánica vegetal o animal (biomasa), como la soja, el maíz o la caña de azúcar. Argentina es un productor y exportador importante de Biodiésel, utilizándolo para reducir el consumo de combustibles fósiles en el transporte y la generación de energía.</p>
+
+            <h3>Simulador Interactivo: Proceso de Producción Simplificado</h3>
+            <div class="simulator-area" id="simulador-biocombustibles">
+                <p>Aquí se añadiría el **código JavaScript y HTML** para el simulador interactivo.</p>
+                <p>Ejemplo: Una secuencia de pasos (recolección de biomasa, fermentación/transesterificación) donde el usuario puede activar cada etapa y ver el "resultado" (producción de biocombustible).</p>
+                <p>_[Este contenido requiere programación en JavaScript.]_</p>
+                </div>
+        </section>
+        
+    </div>
+
+    <script>
+        // Función JavaScript para manejar la navegación entre secciones
+        function showSection(sectionId) {
+            // 1. Ocultar todas las secciones
+            var sections = document.querySelectorAll('.content-section');
+            sections.forEach(function(section) {
+                section.classList.remove('active');
+            });
+
+            // 2. Mostrar la sección deseada
+            var activeSection = document.getElementById(sectionId);
+            if (activeSection) {
+                activeSection.classList.add('active');
+            }
+        }
+    </script>
+
+</body>
+</html>
