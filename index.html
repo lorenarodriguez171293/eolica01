@@ -1,794 +1,488 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matriz Energética y Simuladores de Argentina</title>
-    <style>
-        /* Estilos de la Aplicación Base */
-        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background-color: #f0f4f7; color: #333; }
-        header { background-color: #1a5c92; color: white; padding: 25px 0; text-align: center; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-        h1 { margin: 0; font-size: 2.2em; }
-        .container { width: 95%; max-width: 1100px; margin: 30px auto; }
-        
-        /* Estilos de Secciones y Botones */
-        .content-section { 
-            display: none; 
-            padding: 30px; 
-            border: 1px solid #cceeff; 
-            background-color: white; 
-            margin-bottom: 20px; 
-            border-radius: 10px; 
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05); 
-        }
-        .content-section.active { display: block; }
-        .nav-buttons button, .back-button { 
-            background-color: #007bff; color: white; border: none; padding: 12px 20px; margin: 8px 5px; 
-            cursor: pointer; border-radius: 6px; font-size: 1em; transition: background-color 0.3s, transform 0.1s;
-        }
-        .nav-buttons button:hover, .back-button:hover { background-color: #0056b3; transform: translateY(-1px); }
-        .back-button { background-color: #6c757d !important; margin-bottom: 20px; }
-        .map-button { background-color: #28a745 !important; }
-        .map-button:hover { background-color: #1e7e34 !important; }
-        
-        /* Controles de Simulador */
-        .simulator-area { 
-            background-color: #e9f5ff; padding: 25px; margin-top: 20px; border: 2px dashed #007bff; 
-            border-radius: 8px; min-height: 500px; display: flex; flex-direction: column; align-items: center;
-        }
-        .simulator-control { 
-            margin-bottom: 20px; width: 80%; max-width: 500px; text-align: left; padding: 15px;
-            background-color: #d1e7ff; border-radius: 8px;
-        }
-        .simulator-control label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .simulator-control input[type="range"] { width: 100%; }
-        .simulator-output { 
-            font-size: 1.2em; font-weight: bold; color: #1a5c92; margin-top: 15px; padding: 10px;
-            border: 1px solid #1a5c92; border-radius: 4px; background-color: #f8fbfc;
-        }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Simulador Eólico — Producción y CO₂ evitado</title>
 
-        /* --- VISUALIZACIÓN DE MATRIZ DE DATOS (GRÁFICO DE TORTA) --- */
-        .pie-chart-container {
-            width: 100%; max-width: 350px; height: 350px; margin: 20px auto; position: relative;
-        }
-        #pie-chart {
-            width: 100%; height: 100%; border-radius: 50%;
-            background: conic-gradient(
-                #e67e22 0% 52.0%, /* Gas */
-                #34495e 52.0% 83.0%, /* Petróleo */
-                #2980b9 83.0% 87.5%, /* Hidro */
-                #27ae60 87.5% 90.0%, /* Nuclear */
-                #f1c40f 90.0% 98.0%, /* Renovables */
-                #34495e 98.0% 100% /* Otros */
-            );
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-        }
-        .chart-legend {
-            list-style: none; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; margin-top: 20px;
-        }
-        .legend-item {
-            margin: 5px 15px; font-size: 0.9em;
-        }
-        .legend-color {
-            display: inline-block; width: 12px; height: 12px; margin-right: 5px; border-radius: 3px;
-        }
-        /* Colores de la leyenda */
-        .gas-color { background-color: #e67e22; } .oil-color { background-color: #34495e; } 
-        .hydro-color { background-color: #2980b9; } .nuclear-color { background-color: #27ae60; } 
-        .renewable-color { background-color: #f1c40f; }
+<!-- Chart.js para gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-        /* --- ESTILOS ESPECÍFICOS DEL MAPA (AJUSTADOS) --- */
-        /* Contenedor general para centrar el mapa */
-        .map-container-wrapper {
-            display: flex;
-            justify-content: center;
-            margin: 20px 0;
-        }
-
-        /* Estilos del IFRAME de Google Maps */
-        #google-map-iframe {
-            width: 100%; 
-            max-width: 900px;
-            height: 600px; /* Altura ajustada para mejor visualización de Google Maps */
-            border: 4px solid #1a5c92;
-            border-radius: 10px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-        }
-
-        /* Eliminamos estilos obsoletos del mapa SVG que ya no se usan */
-        #mapa-argentina, #argentina-map-img, #map-overlay-svg, .map-point {
-            display: none; /* Ocultamos los elementos del mapa SVG original */
-        }
-        /* Fin de Eliminación de estilos obsoletos */
-
-
-        /* Estilo del Modal de Información (Mantenido por si se usa en el selector) */
-        .info-modal {
-            background-color: #e9f5ff; padding: 20px; border-radius: 8px; border: 2px solid #007bff;
-            margin-top: 20px; width: 100%; max-width: 450px; margin-left: auto; margin-right: auto;
-            text-align: left;
-        }
-        .modal-title { font-size: 1.5em; color: #1a5c92; margin-bottom: 10px; border-bottom: 2px solid #007bff; padding-bottom: 5px;}
-        .modal-img { width: 100%; height: 150px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; }
-        .modal-data p { margin: 5px 0; font-size: 0.9em; }
-        .modal-data strong { color: #0056b3; }
-        
-        /* ESTILOS DE SIMULADORES */
-        .hydro-viz-container { width: 450px; height: 250px; background: #e0f7fa; border: 2px solid #546e7a; border-radius: 5px; position: relative; margin-bottom: 20px; overflow: hidden; display: flex; }
-        .reservoir-side { width: 60%; position: relative; overflow: hidden; }
-        .powerhouse-side { width: 40%; background: #cfd8dc; position: relative; }
-        #water-level { position: absolute; bottom: 0; width: 100%; background: #00bcd4; transition: height 0.5s ease; opacity: 0.8; }
-        .text-label { position: absolute; padding: 2px 5px; background: rgba(255, 255, 255, 0.8); border-radius: 3px; font-size: 0.7em; font-weight: bold; }
-        .label-embalse { top: 10px; left: 10px; }
-        .label-tailrace { bottom: 10px; right: 10px; }
-        .turbine-svg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        @keyframes fission {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.5); opacity: 0.5; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        
-        @keyframes neutronPath {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(100px, 50px); }
-        }
-
-        @keyframes windAnimate {
-            0% { transform: translateX(0); opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { transform: translateX(250px); opacity: 0; }
-        }
-    </style>
+<style>
+  :root{
+    --bg:#071022;
+    --card:#0b1220;
+    --accent:#1e90ff;
+    --muted:#9aa6b2;
+    --glass: rgba(255,255,255,0.03);
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#041021);color:#e6eef8;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;}
+  header{padding:18px;text-align:center;background:linear-gradient(90deg,var(--accent),#4f46e5);color:#001;box-shadow:0 6px 30px rgba(0,0,0,0.5)}
+  header h1{margin:0;font-size:1.3rem}
+  .wrap{max-width:1150px;margin:18px auto;padding:12px}
+  .grid{display:grid;grid-template-columns:1fr 420px; gap:18px}
+  @media (max-width:980px){.grid{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.04);box-shadow:0 12px 30px rgba(0,0,0,0.6)}
+  .sim-row{display:flex;gap:12px;flex-wrap:wrap}
+  .canvas-box{flex:0 0 420px;min-width:260px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg,#061226,#07122a);position:relative;padding:8px}
+  canvas#turbineCanvas{display:block;width:100%;height:auto;background:transparent}
+  .controls{flex:1;min-width:240px}
+  label{display:block;font-weight:700;color:var(--muted);margin-bottom:6px;font-size:0.95rem}
+  .control{margin-bottom:12px;background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03)}
+  input[type="range"], input[type="number"], select { width:100%; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); background:transparent; color: #e6eef8 }
+  .output { margin-top:10px; padding:10px; border-radius:8px; background: rgba(0,0,0,0.4); font-weight:700; color:#e6eef8 }
+  .small { font-size:0.9rem; color:var(--muted) }
+  .chart-wrap{height:300px;padding:6px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn{background:var(--accent);border:none;color:#001;padding:8px 12px;border-radius:8px;font-weight:700;cursor:pointer}
+  footer{margin-top:18px;text-align:center;color:var(--muted);font-size:0.9rem}
+</style>
 </head>
 <body>
-
-    <header>
-        <h1>Matriz Energética y Simuladores de Argentina 🇦🇷</h1>
-    </header>
-
-    <div class="container">
-
-                <section id="matriz" class="content-section active">
-            <h2>📊 Composición de la Oferta Interna de Energía Primaria</h2>
-            <p>La matriz energética de Argentina ilustra la distribución de las fuentes utilizadas para cubrir la demanda. Más del 80% proviene de fuentes fósiles, lo que marca un gran desafío para la transición energética.</p>
-
-            <div class="matriz-viz">
-                <h3>Distribución por Fuente (Datos Ilustrativos)</h3>
-                
-                                <div class="pie-chart-container">
-                    <div id="pie-chart"></div>
-                </div>
-
-                <ul class="chart-legend">
-                    <li class="legend-item"><span class="legend-color gas-color"></span>Gas Natural (52.0%)</li>
-                    <li class="legend-item"><span class="legend-color oil-color"></span>Petróleo y Derivados (31.0%)</li>
-                    <li class="legend-item"><span class="legend-color hydro-color"></span>Hidroeléctrica (4.5%)</li>
-                    <li class="legend-item"><span class="legend-color nuclear-color"></span>Nuclear (2.5%)</li>
-                    <li class="legend-item"><span class="legend-color renewable-color"></span>Otras Renovables (8.0%)</li>
-                </ul>
-            </div>
-
-            <h2 style="margin-top: 40px;">🗺️ Geolocalización y Simuladores</h2>
-            <div class="nav-buttons">
-                <button class="map-button" onclick="showSection('mapa');">🌍 Mapa Interactivo de Centrales</button>
-            </div>
-            <div class="nav-buttons">
-                <button onclick="showSection('jugar');">🎮 Simuladores para Aprender Jugando</button>                 <button onclick="showSection('hidro');">💧 Hidroeléctrica</button>
-                <button onclick="showSection('nuclear');">⚛️ Nuclear</button>
-                <button onclick="showSection('fotovoltaica');">☀️ Fotovoltaica</button>
-                <button onclick="showSection('eolica');">🌬️ Eólica</button>
-                <button onclick="showSection('biocombustibles');">🌱 Biocombustibles</button>
-            </div>
-        </section>
-
-                <section id="mapa" class="content-section">
-            <button class="back-button" onclick="showSection('matriz');">⬅️ Volver a la Matriz</button>
-            <h2>🗺️ Mapa de Centrales Energéticas de Argentina</h2>
-            <p>Este mapa de Google muestra la ubicación de las principales centrales **hidroeléctricas**, **fotovoltaicas**, **eólicas**, **nucleares** y de **biomasa** en Argentina, según la información disponible en línea.</p>
-
-            <div class="simulator-area" style="min-height: 650px; display: block; text-align: center;">
-
-                                <div class="map-container-wrapper">
-                    <iframe
-                        id="google-map-iframe"
-                        title="Mapa de Centrales Energéticas de Argentina"
-                        loading="lazy"
-                        allowfullscreen
-                        referrerpolicy="no-referrer-when-downgrade"
-                        src="https://www.google.com/maps/embed/v1/search?key=TU_API_KEY&q=centrales+hidroeléctricas,+fotovoltaicas,+eólicas,+nucleares,+y+biomasa+argentina"
-                    ></iframe>
-                </div>
-                <p style="font-size: 0.9em; color: #555;">**NOTA IMPORTANTE:** Para que este mapa de Google Maps funcione correctamente en un sitio web en producción, debes reemplazar el texto `TU_API_KEY` en el atributo `src` del iframe con una clave API válida de Google Maps Platform.</p>
-                                                                <div class="simulator-control" style="max-width: none;">
-                    <label for="region-selector">Modo “Explorar mi Región”: Selecciona tu Provincia</label>
-                    <select id="region-selector" onchange="showRegionInfo(this.value)" style="padding: 8px; border-radius: 4px; width: 100%;">
-                        <option value="">-- Seleccionar Provincia --</option>
-                        <option value="Mendoza">Mendoza (Solar/Hidro)</option>
-                        <option value="Chubut">Chubut (Eólica)</option>
-                        <option value="Buenos Aires">Buenos Aires (Nuclear/Biogás)</option>
-                        <option value="Santa Fe">Santa Fe (Biocombustibles)</option>
-                        <option value="Jujuy">Jujuy (Solar)</option>
-                    </select>
-                </div>
-
-                                <div id="mapa-argentina" style="display: none;">
-                    <img id="argentina-map-img" src="https://placehold.co/450x850/003366/ffffff?text=Mapa+Político+de+Argentina" alt="Mapa Político de Argentina" />
-                    <svg id="map-overlay-svg" viewBox="0 0 450 850" xmlns="http://www.w3.org/2000/svg">...</svg>
-                </div>
-
-                                <div id="plant-info-modal" class="info-modal" style="display: none;">
-                    <h3 class="modal-title" id="modal-plant-name"></h3>
-                    <img id="modal-plant-image" class="modal-img" src="" onerror="this.src='https://placehold.co/400x150/cccccc/333333?text=Foto+Simulada'" alt="Imagen de la planta">
-                    <div class="modal-data">
-                        <p><strong>Tipo:</strong> <span id="modal-plant-type"></span></p>
-                        <p><strong>Provincia:</strong> <span id="modal-plant-province"></span></p>
-                        <p><strong>Producción Estimada:</strong> <span id="modal-plant-production"></span></p>
-                        <p><strong>Impacto Ambiental:</strong> <span id="modal-plant-impact"></span></p>
-                    </div>
-                </div>
-
-                                <div id="region-info-area" class="info-modal" style="display: none; background-color: #ffe0b2; border-color: #ff9800;">
-                    <h3 class="modal-title" style="color: #e65100; border-bottom: 2px solid #ff9800;">🔍 Información Regional para <span id="region-name"></span></h3>
-                    <div id="region-details" class="modal-data"></div>
-                </div>
-            </div>
-        </section>
-
-
-                <section id="jugar" class="content-section">
-            <button class="back-button" onclick="showSection('matriz');">⬅️ Volver a la Matriz</button>
-            <h2>🎮 Simuladores para Aprender Jugando</h2>
-            <p>Aquí puedes experimentar con los principios clave de la generación y el ahorro de energía mediante escenarios interactivos.</p>
-
-            <div class="simulator-area" style="min-height: 400px; align-items: stretch; gap: 20px;">
-                
-                                <div class="simulator-control" style="max-width: 100%; background-color: #fff9c4; border-color: #fdd835;">
-                    <h3 style="font-size: 1.5em; color: #f9a825; margin-bottom: 10px;">☀️ 1. Simulador Solar</h3>
-                    <p>Ajusta las variables para maximizar la producción de tu panel:</p>
-                    <div style="margin-top: 10px;">
-                        <label for="solar-angle">Ángulo del Panel (0°-90°): <span id="solar-angle-val">45</span>°</label>
-                        <input type="range" id="solar-angle" min="0" max="90" value="45" oninput="document.getElementById('solar-angle-val').textContent=this.value;">
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <label for="solar-location">Ubicación (Latitud):</label>
-                        <select id="solar-location" style="width: 100%; padding: 5px; border-radius: 4px;">
-                            <option value="40">Norte (Jujuy, Salta) - Alto Sol</option>
-                            <option value="20">Centro (CBA, SL) - Sol Medio</option>
-                            <option value="0">Sur (Chubut, Santa Cruz) - Sol Bajo</option>
-                        </select>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <label for="solar-weather">Clima:</label>
-                        <select id="solar-weather" style="width: 100%; padding: 5px; border-radius: 4px;">
-                            <option value="1">Soleado</option>
-                            <option value="0.6">Parcialmente Nublado</option>
-                            <option value="0.2">Nublado</option>
-                        </select>
-                    </div>
-                    <button style="background-color: #f9a825; color: white; padding: 10px; border-radius: 5px; margin-top: 15px; width: 100%; font-weight: bold;" onclick="simulatePlaySolar()">Calcular Producción</button>
-                    <div class="simulator-output" id="play-solar-output" style="background-color: #ffecb3;">Producción Estimada: 0.00 kWh</div>
-                </div>
-
-                                <div class="simulator-control" style="max-width: 100%; background-color: #bbdefb; border-color: #42a5f5;">
-                    <h3 style="font-size: 1.5em; color: #1e88e5; margin-bottom: 10px;">🌬️ 2. Simulador Eólico</h3>
-                    <p>Evalúa cómo el diseño y el viento afectan la potencia (recuerda: $P \propto v^3$):</p>
-                    <div style="margin-top: 10px;">
-                        <label for="wind-height">Altura de la Torre (metros): <span id="wind-height-val">50</span>m</label>
-                        <input type="range" id="wind-height" min="20" max="100" value="50" oninput="document.getElementById('wind-height-val').textContent=this.value;">
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <label for="wind-type">Tipo de Molino:</label>
-                        <select id="wind-type" style="width: 100%; padding: 5px; border-radius: 4px;">
-                            <option value="1">Alta Potencia (Eje Horizontal)</option>
-                            <option value="0.5">Baja Potencia (Eje Vertical)</option>
-                        </select>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <label for="wind-speed-play">Velocidad del Viento (m/s): <span id="wind-speed-val-play">10</span> m/s</label>
-                        <input type="range" id="wind-speed-play" min="0" max="25" value="10" oninput="document.getElementById('wind-speed-val-play').textContent=this.value;">
-                    </div>
-                    <button style="background-color: #1e88e5; color: white; padding: 10px; border-radius: 5px; margin-top: 15px; width: 100%; font-weight: bold;" onclick="simulatePlayWind()">Calcular Potencia</button>
-                    <div class="simulator-output" id="play-wind-output" style="background-color: #e3f2fd;">Potencia Estimada: 0.00 kW</div>
-                </div>
-
-                                <div class="simulator-control" style="max-width: 100%; background-color: #c8e6c9; border-color: #66bb6a;">
-                    <h3 style="font-size: 1.5em; color: #388e3c; margin-bottom: 10px;">🏡 3. Mi Casa Sostenible</h3>
-                    <p>Balancea la generación vs. el consumo para un hogar:</p>
-                    
-                    <h4 style="font-weight: bold; margin-top: 15px; border-bottom: 1px dashed #66bb6a;">Generación Estimada (kWh/mes)</h4>
-                    <div style="display: flex; justify-content: space-between; margin-top: 5px;">
-                        <label>Paneles Solares:</label>
-                        <input type="number" id="gen-solar" value="250" style="width: 80px; padding: 3px; border: 1px solid #ccc; border-radius: 4px;">
-                    </div>
-
-                    <h4 style="font-weight: bold; margin-top: 15px; border-bottom: 1px dashed #66bb6a;">Consumo (kWh/mes)</h4>
-                    <div style="margin-top: 5px;">
-                        <label>Eficiencia Energética (Aislamiento, LEDs):</label>
-                        <select id="con-efficiency" style="width: 100%; padding: 5px; border-radius: 4px;">
-                            <option value="1">Baja (Consumo Base: 400)</option>
-                            <option value="0.8">Media (Consumo Base: 320)</option>
-                            <option value="0.6">Alta (Consumo Base: 240)</option>
-                        </select>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <label for="con-habits">Hábitos de Ahorro (Apagar luces, etc.):</label>
-                        <select id="con-habits" style="width: 100%; padding: 5px; border-radius: 4px;">
-                            <option value="1">Malo (Consumo Extra: +100)</option>
-                            <option value="0.5">Normal (Consumo Extra: +50)</option>
-                            <option value="0">Excelente (Consumo Extra: +0)</option>
-                        </select>
-                    </div>
-
-                    <button style="background-color: #388e3c; color: white; padding: 10px; border-radius: 5px; margin-top: 15px; width: 100%; font-weight: bold;" onclick="simulatePlayHome()">Calcular Balance</button>
-                    <div class="simulator-output" id="play-home-output" style="background-color: #e8f5e9;">Balance: 0.00 kWh (Neutral)</div>
-                </div>
-
-            </div>
-        </section>
-
-
-                
-                <section id="hidro" class="content-section">
-            <button class="back-button" onclick="showSection('matriz');">⬅️ Volver a la Matriz</button>
-            <h2>💧 Energía Hidroeléctrica</h2>
-            
-            <h3>Descripción Breve</h3>
-            <p><strong>Descripción:</strong> Utiliza la energía potencial gravitatoria del agua almacenada. La potencia generada es directamente proporcional al <strong>caudal</strong> y al <strong>salto o diferencia de altura (Head)</strong> entre el embalse y la turbina.</p>
-
-            <h3>Simulador Interactivo: Nivel del Embalse</h3>
-            <div class="simulator-area" id="simulador-hidro">
-                <p>Mueve el deslizador para simular cómo un cambio en el nivel del embalse afecta el salto y, por lo tanto, la potencia.</p>
-                
-                                <div class="hydro-viz-container">
-                    <div class="reservoir-side">
-                        <div id="water-level" style="height: 60%;"></div>
-                        <div id="water-head-line" style="top: 70px;"></div>
-                        <span class="text-label label-embalse">EMBALSE</span>
-                        <span id="dam-crest" style="top: 10px; color: #546e7a;">NIVEL MÁX.</span>
-                    </div>
-                    
-                    <div id="dam-structure" style="position: absolute; bottom: 0; left: 60%; width: 5px; height: 100%; background: #9e9e9e; z-index: 5;"></div>
-
-                    <div class="powerhouse-side">
-                        <span class="text-label" style="top: 10px; left: 10px; color: #1a5c92;">SALA DE MÁQUINAS</span>
-                        <svg class="turbine-svg" id="turbine-viz" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="50" cy="50" r="40" fill="#78909c"/>
-                            <path style="fill: #455a64; stroke: #263238; stroke-width: 1;" d="M 50 10 C 65 25, 65 75, 50 90 L 50 80 C 60 70, 60 30, 50 20 Z" transform="rotate(0, 50, 50)"/>
-                            <path style="fill: #455a64; stroke: #263238; stroke-width: 1;" d="M 50 10 C 65 25, 65 75, 50 90 L 50 80 C 60 70, 60 30, 50 20 Z" transform="rotate(120, 50, 50)"/>
-                            <path style="fill: #455a64; stroke: #263238; stroke-width: 1;" d="M 50 10 C 65 25, 65 75, 50 90 L 50 80 C 60 70, 60 30, 50 20 Z" transform="rotate(240, 50, 50)"/>
-                            <circle cx="50" cy="50" r="10" fill="#37474f"/>
-                        </svg>
-                        <span class="text-label label-tailrace" style="bottom: 10px; right: 10px; background: #00bcd4; padding: 2px;">SALIDA DE AGUA</span>
-                    </div>
-
-                    <div id="water-flow-indicator" style="position: absolute; left: 55%; bottom: 50px; width: 10px; height: 30px; background: linear-gradient(to bottom, #4fc3f7, #00bcd4); transform: skewX(10deg); opacity: 0; transition: opacity 0.5s; z-index: 10;"></div>
-                    <span class="text-label" style="top: 35%; left: 65%; color: red; font-size: 1.1em; font-weight: bold;">SALTO (H)</span>
-                </div>
-                
-                <div class="simulator-control">
-                    <label for="embalse-level">Nivel del Embalse (Altura de Agua)</label>
-                    <input type="range" id="embalse-level" min="10" max="90" value="70" oninput="simulateHydro(this.value)">
-                    <p>Nivel Actual: <span id="current-level">70</span>% del máximo</p>
-                </div>
-                
-                <div class="simulator-output">
-                    Potencia Generada: <span id="hydro-output">0.00</span> MW
-                </div>
-            </div>
-        </section>
-
-                <section id="nuclear" class="content-section">
-            <button class="back-button" onclick="showSection('matriz');">⬅️ Volver a la Matriz</button>
-            <h2>⚛️ Energía Nuclear</h2>
-            
-            <h3>Descripción Breve</h3>
-            <p><strong>Descripción:</strong> Se basa en la **fisión nuclear**, donde un neutrón impacta un núcleo atómico (generalmente Uranio-235), liberando energía y más neutrones que continúan la reacción en cadena. Las **barras de control** regulan esta reacción.</p>
-
-            <h3>Simulador Interactivo: Control de Reactor y Fisión</h3>
-            <div class="simulator-area" id="simulador-nuclear">
-                <p>Ajusta el nivel de las barras de control para simular la estabilidad de la reacción de fisión.</p>
-
-                                <div style="width: 400px; height: 300px; background: #e8f5e9; border: 3px solid #388e3c; border-radius: 10px; position: relative; display: flex; align-items: flex-end; justify-content: center; padding-top: 20px; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden;">
-                    <div id="reactor-vessel" style="width: 80%; height: 80%; background: #a5d6a7; border-radius: 10px 10px 0 0; position: relative;">
-                        <span id="uranium-1" style="position: absolute; width: 20px; height: 20px; background: #4caf50; border-radius: 50%; border: 2px solid #2e7d32; text-align: center; color: white; font-size: 0.7em; line-height: 18px; box-shadow: 0 0 5px rgba(0, 255, 0, 0.5); top: 50%; left: 30%;">U-235</span>
-                        <span id="uranium-2" style="position: absolute; width: 20px; height: 20px; background: #4caf50; border-radius: 50%; border: 2px solid #2e7d32; text-align: center; color: white; font-size: 0.7em; line-height: 18px; box-shadow: 0 0 5px rgba(0, 255, 0, 0.5); top: 40%; right: 20%;">U-235</span>
-                        <div id="n1" style="position: absolute; width: 5px; height: 5px; background: yellow; border-radius: 50%; opacity: 0; animation: none; left: 10%; top: 45%;"></div>
-                        <div id="n2" style="position: absolute; width: 5px; height: 5px; background: yellow; border-radius: 50%; opacity: 0; animation: none; left: 70%; top: 40%;"></div>
-                        <div id="n3" style="position: absolute; width: 5px; height: 5px; background: yellow; border-radius: 50%; opacity: 0; animation: none; left: 50%; top: 60%;"></div>
-                    </div>
-                    <div style="position: absolute; top: 0; width: 100%; display: flex; justify-content: space-around; padding: 0 40px; box-sizing: border-box;">
-                        <div id="rod-1" style="width: 10px; background: #546e7a; border-radius: 3px; position: relative; transition: transform 0.3s ease; height: 120px;"></div>
-                        <div id="rod-2" style="width: 10px; background: #546e7a; border-radius: 3px; position: relative; transition: transform 0.3s ease; height: 120px;"></div>
-                        <div id="rod-3" style="width: 10px; background: #546e7a; border-radius: 3px; position: relative; transition: transform 0.3s ease; height: 120px;"></div>
-                    </div>
-                    <div style="position: absolute; bottom: 5px; color: #37474f;">CONTENCIÓN Y MODERADOR</div>
-                </div>
-
-                <div class="simulator-control">
-                    <label for="control-rods">Posición de Barras de Control (%)</label>
-                    <input type="range" id="control-rods" min="10" max="90" value="50" oninput="simulateNuclear(this.value)">
-                    <p>Nivel de Barras: <span id="current-rod-level">50</span>% (Regula la reacción)</p>
-                </div>
-
-                <div class="simulator-output">
-                    Tasa de Reacción: <span id="nuclear-output">Estable</span>
-                </div>
-            </div>
-        </section>
-
-                <section id="fotovoltaica" class="content-section">
-            <button class="back-button" onclick="showSection('matriz');">⬅️ Volver a la Matriz</button>
-            <h2>☀️ Energía Fotovoltaica (Solar)</h2>
-            
-            <h3>Descripción Breve</h3>
-            <p><strong>Descripción:</strong> Los paneles solares convierten la luz solar directamente en electricidad mediante el <strong>efecto fotoeléctrico</strong>. La producción depende de la **irradiación solar** (intensidad de la luz) y el **ángulo de inclinación**.</p>
-
-            <h3>Simulador Interactivo: Irradiación y Producción</h3>
-            <div class="simulator-area" id="simulador-solar">
-                <p>Simula diferentes condiciones climáticas y geográficas.</p>
-
-                                <div style="width: 400px; height: 200px; background: #cfd8dc; border: 2px solid #546e7a; border-radius: 8px; position: relative; margin-bottom: 20px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                    <div id="solar-panel-viz" style="width: 250px; height: 120px; background: linear-gradient(135deg, #0056b3, #00aaff); border-radius: 5px; position: relative; border: 3px solid #1a5c92; transform: rotateX(60deg) rotateZ(10deg);">
-                        <div id="panel-effect" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, rgba(255,255,0,0.5) 0%, rgba(255,255,0,0) 70%); opacity: 0;"></div>
-                        <div id="energy-flow" style="position: absolute; bottom: 5px; right: 5px; width: 10px; height: 10px; background: yellow; border-radius: 50%; opacity: 0;"></div>
-                    </div>
-                    <div id="sun-viz" style="position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; background: #ffeb3b; border-radius: 50%; box-shadow: 0 0 15px #ffeb3b; transition: all 0.5s ease;"></div>
-                </div>
-
-                <div class="simulator-control">
-                    <label for="irradiacion">Irradiación Solar (kW/m²)</label>
-                    <input type="range" id="irradiacion" min="0.1" max="1.0" step="0.1" value="0.8" oninput="simulateSolar(this.value)">
-                    <p>Nivel de Sol: <span id="current-irradiacion">0.8</span> kW/m²</p>
-                </div>
-                
-                <div class="simulator-control">
-                    <label for="inclinacion">Ángulo de Inclinación del Panel (grados)</label>
-                    <input type="range" id="inclinacion" min="0" max="90" value="30" oninput="simulateSolar(document.getElementById('irradiacion').value); document.getElementById('current-inclinacion').textContent=this.value;">
-                    <p>Ángulo: <span id="current-inclinacion">30</span>°</p>
-                </div>
-
-                <div class="simulator-output">
-                    Producción Estimada: <span id="solar-output">0.00</span> kWh/hora
-                </div>
-            </div>
-        </section>
-
-                <section id="eolica" class="content-section">
-            <button class="back-button" onclick="showSection('matriz');">⬅️ Volver a la Matriz</button>
-            <h2>🌬️ Energía Eólica</h2>
-            
-            <h3>Descripción Breve</h3>
-            <p><strong>Descripción:</strong> La energía cinética del viento mueve las palas del aerogenerador. La potencia es extremadamente sensible a la velocidad del viento, siguiendo la relación $P \propto v^3$.</p>
-
-            <h3>Simulador Interactivo: Velocidad del Viento (Fuerza Eólica)</h3>
-            <div class="simulator-area" id="simulador-eolica">
-                <p>Observa cómo un pequeño cambio en el viento afecta la potencia (regla del cubo).</p>
-
-                                <div style="width: 400px; height: 300px; background: #e0f7fa; border: 2px solid #00acc1; border-radius: 8px; position: relative; margin-bottom: 20px; overflow: hidden;">
-                                        <div style="position: absolute; bottom: 0; left: 175px; width: 50px; height: 250px; background: #90a4ae; border-radius: 5px 5px 0 0; transform-origin: bottom; transform: scaleX(0.7); border-right: 2px solid #78909c;"></div>
-                                        <div style="position: absolute; top: 50px; left: 155px; width: 90px; height: 30px; background: #546e7a; border-radius: 5px;"></div>
-                                        <div id="turbine-blades" style="position: absolute; top: 65px; left: 150px; width: 100px; height: 10px; background: none; transform-origin: 50px 5px; transition: all 0.5s ease;">
-                        <div style="position: absolute; top: 0; left: 0; width: 100px; height: 10px; background: #263238; border-radius: 5px;"></div>
-                        <div style="position: absolute; top: 0; left: 0; width: 100px; height: 10px; background: #263238; border-radius: 5px; transform: rotate(120deg);"></div>
-                        <div style="position: absolute; top: 0; left: 0; width: 100px; height: 10px; background: #263238; border-radius: 5px; transform: rotate(240deg);"></div>
-                    </div>
-
-                                        <div id="wind-indicator-1" style="position: absolute; top: 100px; left: 0; width: 30px; height: 5px; background: #4fc3f7; border-radius: 2px; opacity: 0.5; animation: none;"></div>
-                    <div id="wind-indicator-2" style="position: absolute; top: 150px; left: 50px; width: 40px; height: 5px; background: #4fc3f7; border-radius: 2px; opacity: 0.5; animation: none;"></div>
-                </div>
-
-                <div class="simulator-control">
-                    <label for="wind-speed">Velocidad del Viento (m/s)</label>
-                    <input type="range" id="wind-speed" min="0" max="25" value="10" oninput="simulateWind(this.value)">
-                    <p>Viento Actual: <span id="current-wind-speed">10</span> m/s</p>
-                </div>
-
-                <div class="simulator-output">
-                    Potencia Generada: <span id="wind-output">0.00</span> kW
-                </div>
-            </div>
-        </section>
-
-                <section id="biocombustibles" class="content-section">
-            <button class="back-button" onclick="showSection('matriz');">⬅️ Volver a la Matriz</button>
-            <h2>🌱 Biocombustibles y Biomasa</h2>
-            
-            <h3>Descripción Breve</h3>
-            <p><strong>Descripción:</strong> Se obtiene a partir de materia orgánica (biomasa). Puede ser sólida (leña, residuos) para quemar y generar vapor, o líquida/gaseosa (**biocombustibles** como el bioetanol y el biodiésel) para motores.</p>
-
-            <h3>Simulador Interactivo: Origen y Rendimiento</h3>
-            <div class="simulator-area" id="simulador-biomasa">
-                <p>Compara la eficiencia de diferentes fuentes de biomasa.</p>
-
-                                <div style="width: 400px; height: 250px; background: #e8f5e9; border: 2px solid #388e3c; border-radius: 8px; position: relative; margin-bottom: 20px; overflow: hidden; display: flex; align-items: flex-end; justify-content: space-around;">
-                                        <div style="width: 100px; height: 180px; background: #aed581; border: 2px solid #689f38; border-radius: 5px 5px 0 0; position: relative;">
-                        <span style="position: absolute; top: 5px; left: 5px; font-size: 0.7em; font-weight: bold; color: #388e3c;">Biomasa Sólida</span>
-                    </div>
-                                        <div style="width: 150px; height: 150px; background: #fff9c4; border: 2px solid #f9a825; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center;">
-                        <span style="font-size: 0.9em; font-weight: bold; color: #f9a825;">DIGESTOR / CONVERSIÓN</span>
-                    </div>
-                </div>
-
-                <div class="simulator-control">
-                    <label for="biomass-type">Tipo de Biomasa</label>
-                    <select id="biomass-type" onchange="simulateBiomass(this.value)" style="width: 100%; padding: 5px; border-radius: 4px;">
-                        <option value="1.0">Biomasa Forestal/Agrícola (Estándar)</option>
-                        <option value="1.3">Biogás (Alta Eficiencia)</option>
-                        <option value="0.7">Residuos Sólidos Urbanos (Baja Eficiencia)</option>
-                    </select>
-                </div>
-
-                <div class="simulator-control">
-                    <label for="material-quantity">Cantidad de Materia Prima (Toneladas/día)</label>
-                    <input type="range" id="material-quantity" min="10" max="100" value="50" oninput="simulateBiomass(document.getElementById('biomass-type').value)">
-                    <p>Cantidad: <span id="current-quantity">50</span> Toneladas/día</p>
-                </div>
-
-                <div class="simulator-output">
-                    Producción Equivalente: <span id="biomass-output">0.00</span> MWh
-                </div>
-            </div>
-        </section>
-
-    </div>     <script>
-        // --- FUNCIONES DE NAVEGACIÓN ---
-        function showSection(sectionId) {
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            document.getElementById(sectionId).classList.add('active');
-        }
-
-        // --- FUNCIONES DE SIMULACIÓN (Mantenidas) ---
-
-        // Simulador Hidroeléctrico
-        function simulateHydro(level) {
-            const maxHead = 100; // Altura máxima simulada
-            const minLevel = 10;
-            const currentLevel = parseInt(level);
-            const head = maxHead - currentLevel;
-            const flowRate = 0.5; // Caudal simulado constante
-            const efficiency = 0.8; // Eficiencia
-
-            // Fórmula de potencia (simplificada): P ∝ Q * H
-            const power = 9.81 * flowRate * head * efficiency / 100 * 5; // Factor de ajuste
-            
-            document.getElementById('water-level').style.height = currentLevel + '%';
-            document.getElementById('current-level').textContent = currentLevel;
-            document.getElementById('hydro-output').textContent = power.toFixed(2);
-            
-            const flowIndicator = document.getElementById('water-flow-indicator');
-            const turbine = document.getElementById('turbine-viz');
-            
-            if (power > 5) {
-                flowIndicator.style.opacity = 1;
-                turbine.style.animation = `spin ${10 / power}s linear infinite`;
-            } else {
-                flowIndicator.style.opacity = 0.2;
-                turbine.style.animation = 'none';
-            }
-        }
-        simulateHydro(70); // Inicializar
-
-        // Simulador Nuclear
-        function simulateNuclear(rodLevel) {
-            const rods = document.querySelectorAll('#simulador-nuclear [id^="rod-"]');
-            const output = document.getElementById('nuclear-output');
-            const uraniums = [document.getElementById('uranium-1'), document.getElementById('uranium-2')];
-            const neutrons = [document.getElementById('n1'), document.getElementById('n2'), document.getElementById('n3')];
-
-            rods.forEach(rod => {
-                // 90% in (totalmente insertado) es el tope
-                // 10% out (totalmente retirado) es la base
-                const retracted = 90 - parseInt(rodLevel);
-                rod.style.transform = `translateY(${retracted * 1.5}px)`; // Factor de ajuste visual
-            });
-            
-            document.getElementById('current-rod-level').textContent = rodLevel;
-
-            if (rodLevel < 35) {
-                output.textContent = '¡CRÍTICO! Producción Máxima (Riesgo)';
-                output.style.color = 'red';
-                uraniums.forEach(u => u.style.animation = 'fission 0.5s infinite');
-                neutrons.forEach((n, i) => n.style.animation = `neutronPath 0.5s linear infinite ${i * 0.1}s`);
-                neutrons.forEach(n => n.style.opacity = 1);
-            } else if (rodLevel > 75) {
-                output.textContent = 'Apagado. Reacción Controlada.';
-                output.style.color = 'gray';
-                uraniums.forEach(u => u.style.animation = 'none');
-                neutrons.forEach(n => n.style.animation = 'none');
-                neutrons.forEach(n => n.style.opacity = 0);
-            } else {
-                output.textContent = 'Estable. Generación Base.';
-                output.style.color = '#1a5c92';
-                uraniums.forEach(u => u.style.animation = 'none');
-                neutrons.forEach(n => n.style.animation = 'none');
-                neutrons.forEach(n => n.style.opacity = 0.5);
-            }
-        }
-        simulateNuclear(50); // Inicializar
-
-        // Simulador Solar (Sección principal)
-        function simulateSolar(irradiacion) {
-            const panelCapacity = 0.5; // Capacidad base del panel (kW)
-            const inclination = parseInt(document.getElementById('inclinacion').value);
-            const irradianceValue = parseFloat(irradiacion);
-            
-            // Simular el impacto del ángulo: Max a 30 grados (simulado para Argentina Centro/Sur)
-            const angleFactor = Math.cos((inclination - 30) * Math.PI / 180 / 2) * 0.5 + 0.5;
-
-            const production = panelCapacity * irradianceValue * angleFactor;
-            
-            document.getElementById('current-irradiacion').textContent = irradianceValue.toFixed(1);
-            document.getElementById('solar-output').textContent = production.toFixed(2);
-            
-            const panelEffect = document.getElementById('panel-effect');
-            const sunViz = document.getElementById('sun-viz');
-            
-            panelEffect.style.opacity = irradianceValue * 0.8;
-            sunViz.style.transform = `scale(${0.8 + irradianceValue * 0.4})`;
-        }
-        simulateSolar(0.8); // Inicializar
-
-        // Simulador Eólico (Sección principal)
-        function simulateWind(speed) {
-            const density = 1.225; // Densidad del aire (kg/m³)
-            const area = 50; // Área de barrido simulada (m²)
-            const cp = 0.4; // Coeficiente de potencia (Betz limit: 0.59)
-            const windSpeed = parseFloat(speed);
-            
-            // Fórmula de potencia eólica: P = 0.5 * ρ * A * v³ * Cp
-            const powerWatts = 0.5 * density * area * Math.pow(windSpeed, 3) * cp;
-            const powerKW = powerWatts / 1000;
-            
-            document.getElementById('current-wind-speed').textContent = windSpeed.toFixed(0);
-            document.getElementById('wind-output').textContent = powerKW.toFixed(2);
-            
-            const blades = document.getElementById('turbine-blades');
-            const wind1 = document.getElementById('wind-indicator-1');
-            const wind2 = document.getElementById('wind-indicator-2');
-
-            if (windSpeed > 3) {
-                const speedFactor = 10 / windSpeed; // Más rápido a mayor velocidad
-                blades.style.animation = `spin ${speedFactor}s linear infinite`;
-                wind1.style.animation = `windAnimate ${speedFactor * 0.8}s linear infinite`;
-                wind2.style.animation = `windAnimate ${speedFactor}s linear infinite 0.5s`;
-            } else {
-                blades.style.animation = 'none';
-                wind1.style.animation = 'none';
-                wind2.style.animation = 'none';
-            }
-        }
-        simulateWind(10); // Inicializar
-
-        // Simulador Biomasa (Sección principal)
-        function simulateBiomass(type) {
-            const typeFactor = parseFloat(type);
-            const quantity = parseInt(document.getElementById('material-quantity').value);
-            
-            // Producción simulada: Q * Factor de Tipo * Factor de Conversión
-            const conversionFactor = 0.5; // 0.5 MWh/Ton (ajuste)
-            const production = quantity * typeFactor * conversionFactor;
-            
-            document.getElementById('current-quantity').textContent = quantity;
-            document.getElementById('biomass-output').textContent = production.toFixed(2);
-        }
-        simulateBiomass(1.0); // Inicializar
-
-        // --- FUNCIONES DE SIMULADORES DE JUEGO ---
-
-        // 1. Solar
-        function simulatePlaySolar() {
-            const angle = parseInt(document.getElementById('solar-angle').value);
-            const locationFactor = parseFloat(document.getElementById('solar-location').value) / 100 + 1; // 1 a 1.4
-            const weatherFactor = parseFloat(document.getElementById('solar-weather').value);
-            const panelSize = 100; // Capacidad base simulada (kW)
-
-            // Simular irradiancia óptima en ángulo: max en 45 grados (arbitrario)
-            const angleEfficiency = Math.max(0.2, 1 - Math.abs(angle - 45) / 45);
-
-            const production = panelSize * angleEfficiency * locationFactor * weatherFactor * 0.1; // Factor de ajuste
-            
-            document.getElementById('play-solar-output').textContent = `Producción Estimada: ${production.toFixed(2)} kWh`;
-        }
-
-        // 2. Eólico
-        function simulatePlayWind() {
-            const height = parseInt(document.getElementById('wind-height').value);
-            const typeFactor = parseFloat(document.getElementById('wind-type').value);
-            const speed = parseInt(document.getElementById('wind-speed-play').value);
-            
-            // Potencia Eólica: P ∝ v³ * Altura * Tipo
-            const power = Math.pow(speed, 3) * (height / 100) * typeFactor * 0.1;
-            
-            document.getElementById('play-wind-output').textContent = `Potencia Estimada: ${power.toFixed(2)} kW`;
-        }
-
-        // 3. Mi Casa Sostenible
-        function simulatePlayHome() {
-            const genSolar = parseFloat(document.getElementById('gen-solar').value) || 0;
-            const efficiencyFactor = parseFloat(document.getElementById('con-efficiency').value);
-            const habitsFactor = parseFloat(document.getElementById('con-habits').value);
-            const baseConsumption = 400; // kWh/mes
-            const extraConsumption = habitsFactor * 100;
-
-            const totalConsumption = (baseConsumption * efficiencyFactor) + extraConsumption;
-            const balance = genSolar - totalConsumption;
-
-            let status = 'Neutral';
-            let color = '#e8f5e9';
-            if (balance > 50) {
-                status = '¡Excedente! Vendes a la red.';
-                color = '#ccff90';
-            } else if (balance < -50) {
-                status = 'Déficit. Compras a la red.';
-                color = '#ffcdd2';
-            }
-            
-            const outputElement = document.getElementById('play-home-output');
-            outputElement.textContent = `Balance: ${balance.toFixed(2)} kWh (${status})`;
-            outputElement.style.backgroundColor = color;
-        }
-
-        // --- FUNCIONES DEL MAPA VECES/MODALES (Mantenidas, pero no interactúan con Google Maps) ---
-        
-        // Datos simulados para el selector de región
-        const regionData = {
-            "Mendoza": "Mendoza tiene alto potencial solar y es clave en energía hidroeléctrica por el Río Atuel y otros. Fomenta el uso de energía renovable no tradicional.",
-            "Chubut": "Chubut es la capital eólica de Argentina debido a sus vientos constantes de alta velocidad. Es una zona clave para el desarrollo de parques eólicos.",
-            "Buenos Aires": "Concentra gran parte de la demanda y cuenta con centrales nucleares (Atucha I y II) y plantas de biogás para gestión de residuos urbanos.",
-            "Santa Fe": "Santa Fe es un hub de biocombustibles, con alta producción de bioetanol y biodiésel a partir de la industria agrícola, especialmente la soja.",
-            "Jujuy": "Jujuy, con su alta radiación solar, alberga el Parque Solar Cauchari, uno de los más grandes de Latinoamérica, impulsando la energía fotovoltaica.",
-        };
-
-        function showRegionInfo(region) {
-            const infoArea = document.getElementById('region-info-area');
-            const details = document.getElementById('region-details');
-            const regionName = document.getElementById('region-name');
-
-            if (region && regionData[region]) {
-                regionName.textContent = region;
-                details.innerHTML = `<p>${regionData[region]}</p>`;
-                infoArea.style.display = 'block';
-            } else {
-                infoArea.style.display = 'none';
-            }
-        }
-
-        // Esta función no funciona con Google Maps, solo con el SVG anterior
-        function showPlantDetails(name, province) {
-            const modal = document.getElementById('plant-info-modal');
-            const type = name.split(' ')[0];
-            modal.style.display = 'block';
-            document.getElementById('modal-plant-name').textContent = name;
-            document.getElementById('modal-plant-type').textContent = type;
-            document.getElementById('modal-plant-province').textContent = province;
-
-            // Datos simulados para el modal
-            let prod = "Varía según las condiciones";
-            let impact = "Bajo";
-            let img = "";
-
-            if (type.includes("Hidro")) { prod = "Grandes caudales, Alta Potencia"; impact = "Alteración ecosistema fluvial"; img = "https://placehold.co/400x150/2980b9/ffffff?text=Hidroelectrica"; }
-            else if (type.includes("Solar")) { prod = "Dependiente del sol, Potencia Media"; impact = "Bajo, requiere gran superficie"; img = "https://placehold.co/400x150/f1c40f/333333?text=Solar+Fotovoltaica"; }
-            else if (type.includes("Eólico")) { prod = "Dependiente del viento, Potencia Variable"; impact = "Impacto visual y aves"; img = "https://placehold.co/400x150/00bcd4/333333?text=Parque+Eolico"; }
-            else if (type.includes("Nuclear")) { prod = "Potencia Base constante, Alto Rendimiento"; impact = "Riesgo de residuos radiactivos"; img = "https://placehold.co/400x150/27ae60/ffffff?text=Central+Nuclear"; }
-            else if (type.includes("Biogás") || type.includes("Biocombustibles")) { prod = "Constante, aprovecha residuos"; impact = "Uso de suelo agrícola / Tratamiento de residuos"; img = "https://placehold.co/400x150/8bc34a/333333?text=Biomasa/Biogas"; }
-
-            document.getElementById('modal-plant-production').textContent = prod;
-            document.getElementById('modal-plant-impact').textContent = impact;
-            document.getElementById('modal-plant-image').src = img;
-
-            // Desplaza la vista hacia el modal
-            modal.scrollIntoView({ behavior: 'smooth' });
-        }
-
-    </script>
+<header>
+  <h1>Simulador Eólico — Producción estimada & CO₂ evitado</h1>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <!-- MAIN: simulador y controles -->
+    <div class="card">
+      <h2 style="margin:6px 0">🌬️ Simulador de Parque Eólico</h2>
+      <p class="small">Ajustá velocidad de viento, número de aerogeneradores, altura del hub y diámetro del rotor. Los resultados se calculan con la fórmula física P = 0.5·ρ·A·v³·Cp (con correcciones por eficiencia y disponibilidad).</p>
+
+      <div class="sim-row" style="margin-top:12px">
+        <div class="canvas-box">
+          <canvas id="turbineCanvas" width="800" height="520"></canvas>
+          <div style="position:absolute;right:12px;top:12px;color:var(--muted);font-size:12px">Animación</div>
+        </div>
+
+        <div class="controls">
+          <div class="control">
+            <label for="windSpeed">Velocidad de viento (m/s) — referencia 10 m</label>
+            <input id="windSpeed" type="range" min="0" max="30" step="0.1" value="8" oninput="onInputChange()">
+            <input id="windSpeedNum" type="number" min="0" max="50" step="0.1" value="8" oninput="onInputChange()" style="margin-top:6px">
+            <div class="small">Velocidad en 10 m; la altura del hub ajusta la velocidad efectiva mediante ley de potencia.</div>
+          </div>
+
+          <div class="control">
+            <label for="hubHeight">Altura del hub (m)</label>
+            <input id="hubHeight" type="range" min="20" max="180" step="1" value="80" oninput="onInputChange()">
+            <input id="hubHeightNum" type="number" min="20" max="300" step="1" value="80" oninput="onInputChange()" style="margin-top:6px">
+            <div class="small">Altura del eje del aerogenerador.</div>
+          </div>
+
+          <div class="control">
+            <label for="rotorDiameter">Diámetro del rotor (m)</label>
+            <input id="rotorDiameter" type="range" min="20" max="220" step="1" value="120" oninput="onInputChange()">
+            <input id="rotorDiameterNum" type="number" min="10" max="400" step="1" value="120" oninput="onInputChange()" style="margin-top:6px">
+            <div class="small">Diámetro de giro de las palas — determina el área barrida A = π·(D/2)².</div>
+          </div>
+
+          <div class="control">
+            <label for="nTurbines">Cantidad de aerogeneradores</label>
+            <input id="nTurbines" type="range" min="1" max="200" step="1" value="5" oninput="onInputChange()">
+            <input id="nTurbinesNum" type="number" min="1" max="200" step="1" value="5" oninput="onInputChange()" style="margin-top:6px">
+          </div>
+
+          <div class="control">
+            <label for="cp">Cp — Coeficiente de potencia (Betz ≤ 0.59)</label>
+            <input id="cp" type="range" min="20" max="50" step="1" value="38" oninput="onInputChange()">
+            <input id="cpNum" type="number" min="20" max="59" step="1" value="38" oninput="onInputChange()" style="margin-top:6px">
+            <div class="small">Valor típico: 30–45% (el 59% es límite teórico de Betz).</div>
+          </div>
+
+          <div class="control">
+            <label for="efficiency">Eficiencia del generador / pérdidas (%)</label>
+            <input id="efficiency" type="range" min="60" max="98" step="1" value="92" oninput="onInputChange()">
+            <input id="efficiencyNum" type="number" min="60" max="99" step="1" value="92" oninput="onInputChange()" style="margin-top:6px">
+          </div>
+
+          <div class="control">
+            <label for="availability">Factor operativo / disponibilidad (%)</label>
+            <input id="availability" type="range" min="50" max="99" step="1" value="95" oninput="onInputChange()">
+            <input id="availabilityNum" type="number" min="50" max="99" step="1" value="95" oninput="onInputChange()" style="margin-top:6px">
+            <div class="small">Porcentaje de tiempo que el parque está operando (mantenimiento, fallas, etc.).</div>
+          </div>
+
+          <div class="control">
+            <label for="co2Factor">Factor de emisión evitada (kg CO₂ / kWh)</label>
+            <input id="co2Factor" type="range" min="0" max="1" step="0.01" value="0.45" oninput="onInputChange()">
+            <input id="co2FactorNum" type="number" min="0" max="5" step="0.01" value="0.45" oninput="onInputChange()" style="margin-top:6px">
+            <div class="small">Valor por defecto 0.45 kgCO₂/kWh (ajustable según mix eléctrico local).</div>
+          </div>
+
+          <div style="margin-top:8px" class="row">
+            <button class="btn" onclick="resetDefaults()">Restablecer valores</button>
+            <button class="btn" onclick="downloadCSV()">Descargar CSV (mensual)</button>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="margin-top:14px" class="output" id="resultsBox">
+        Cálculos: Potencia instantánea: -- MW · Producción diaria: -- kWh · mensual: -- kWh · anual: -- kWh · CO₂ evitado anual: -- t
+      </div>
+
+      <div style="margin-top:12px" class="card chart-wrap">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+
+    </div>
+
+    <!-- SIDE: explicaciones y resumen -->
+    <aside class="card">
+      <h3 style="margin:6px 0">ℹ️ Cómo se calcula</h3>
+      <div class="small">
+        <ul>
+          <li><strong>Potencia instantánea por turbina</strong>: P = 0.5 · ρ · A · v³ · Cp · η (W). Donde ρ=1.225 kg/m³ (aire), A = π·(D/2)² (m²), v = velocidad del viento (m/s), Cp = coeficiente de potencia (fracción), η = eficiencia del generador (fracción).</li>
+          <li><strong>Producción</strong>: asumimos la velocidad constante para estimar día/mes/año con disponibilidad operativa.</li>
+          <li><strong>CO₂ evitado</strong>: energía (kWh) · factor de emisión (kgCO₂/kWh).</li>
+        </ul>
+      </div>
+
+      <h4 style="margin-top:12px">Valores rápidos</h4>
+      <div id="quickValues" class="small">
+        Potencia por turbina: -- kW<br>
+        Potencia total (instant): -- kW<br>
+        Producción diaria (total): -- kWh
+      </div>
+    </aside>
+  </div>
+
+  <footer>Simulador educativo — resultados aproximados (no para diseño de ingeniería).</footer>
+</div>
+
+<script>
+/* ---------------------------
+   Utilidades y elementos
+   --------------------------- */
+const el = id => document.getElementById(id);
+
+// inputs (pairs)
+const inputs = [
+  ['windSpeed','windSpeedNum'],
+  ['hubHeight','hubHeightNum'],
+  ['rotorDiameter','rotorDiameterNum'],
+  ['nTurbines','nTurbinesNum'],
+  ['cp','cpNum'],
+  ['efficiency','efficiencyNum'],
+  ['availability','availabilityNum'],
+  ['co2Factor','co2FactorNum']
+];
+
+// sync sliders <-> number fields
+inputs.forEach(([a,b])=>{
+  const sa = el(a), sb = el(b);
+  sa.addEventListener('input', ()=>{ if(sb.value!==sa.value) sb.value = sa.value; onInputChange(); });
+  sb.addEventListener('input', ()=>{ if(sa.value!==sb.value) sa.value = sb.value; onInputChange(); });
+});
+
+/* defaults */
+function resetDefaults(){
+  el('windSpeed').value = el('windSpeedNum').value = 8;
+  el('hubHeight').value = el('hubHeightNum').value = 80;
+  el('rotorDiameter').value = el('rotorDiameterNum').value = 120;
+  el('nTurbines').value = el('nTurbinesNum').value = 5;
+  el('cp').value = el('cpNum').value = 38;
+  el('efficiency').value = el('efficiencyNum').value = 92;
+  el('availability').value = el('availabilityNum').value = 95;
+  el('co2Factor').value = el('co2FactorNum').value = 0.45;
+  onInputChange();
+}
+
+/* ---------------------------
+   Physics & calculations
+   --------------------------- */
+
+/*
+ Assumptions & notes:
+ - Air density rho = 1.225 kg/m^3 (standard sea level)
+ - Cp from slider is given as percent (e.g., 38 -> 0.38)
+ - Efficiency is generator+losses in percent
+ - Availability is percent of time operational
+ - Wind shear: we treat windSpeed input as reference at 10 m.
+   We estimate wind at hub height using power law: v(h) = v_ref * (h / h_ref)^alpha,
+   with h_ref = 10 m, alpha = 0.14 (typical for open terrain). User can treat windSpeed as measured at hub if desired.
+ - Monthly days use standard month lengths.
+*/
+
+const rho = 1.225;
+const h_ref = 10;
+const alpha_default = 0.14; // wind shear exponent (surface roughness dependent)
+const daysInMonth = [31,28,31,30,31,30,31,31,30,31,30,31];
+
+function windAtHeight(v_ref, h, alpha=alpha_default){
+  // v_ref at h_ref (10 m). Compute v at hub height h.
+  if(h <= 0) return v_ref;
+  const v = v_ref * Math.pow((h / h_ref), alpha);
+  return v;
+}
+
+// P = 0.5 * rho * A * v^3 * Cp * eta  (Watts)
+function powerPerTurbine_W(v, D, Cp_frac, eta_frac){
+  const A = Math.PI * Math.pow(D/2, 2); // m^2
+  const P = 0.5 * rho * A * Math.pow(v, 3) * Cp_frac * eta_frac;
+  return P;
+}
+
+/* ---------------------------
+   Chart setup (monthly)
+   --------------------------- */
+const chartCtx = document.getElementById('monthlyChart').getContext('2d');
+const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const monthlyChart = new Chart(chartCtx, {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [{
+      label: 'Producción estimada (kWh/mes)',
+      data: Array(12).fill(0),
+      backgroundColor: 'rgba(30,144,255,0.7)',
+      borderColor: 'rgba(30,144,255,1)',
+      borderWidth: 1
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: { beginAtZero: true, title: { display:true, text:'kWh' } }
+    },
+    plugins: {
+      tooltip: { callbacks: { label: ctx => `${ctx.formattedValue} kWh` } },
+      legend: { display: false }
+    }
+  }
+});
+
+/* ---------------------------
+   Turbine animation (Canvas)
+   --------------------------- */
+const canvas = document.getElementById('turbineCanvas');
+const ctx = canvas.getContext('2d');
+let deviceRatio = window.devicePixelRatio || 1;
+function resizeCanvasToDisplaySize(){
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width;
+  const h = Math.max(300, rect.height);
+  canvas.width = Math.floor(w * deviceRatio);
+  canvas.height = Math.floor(h * deviceRatio);
+  canvas.style.height = h + 'px';
+  ctx.setTransform(deviceRatio, 0, 0, deviceRatio, 0, 0);
+}
+window.addEventListener('resize', ()=>{ resizeCanvasToDisplaySize(); drawFrame(); });
+
+resizeCanvasToDisplaySize();
+
+/* turbine drawing parameters */
+let animId = null;
+let rotorAngle = 0;
+
+// simple function to draw a single turbine (hub + blades) at center
+function drawTurbine(x,y,hubHeightPx, Dpx, angle, bladeColor='#fff', towerColor='#dfe6f1'){
+  // tower
+  ctx.fillStyle = towerColor;
+  const towerTopY = y - hubHeightPx;
+  ctx.beginPath();
+  ctx.moveTo(x-6, y);
+  ctx.lineTo(x+6, y);
+  ctx.lineTo(x+2, towerTopY);
+  ctx.lineTo(x-2, towerTopY);
+  ctx.closePath();
+  ctx.fill();
+
+  // nacelle
+  ctx.fillStyle = '#e6eef8';
+  ctx.fillRect(x-18, towerTopY-8, 36, 14);
+
+  // hub circle
+  ctx.save();
+  ctx.translate(x, towerTopY);
+  ctx.rotate(angle);
+  // blades
+  ctx.fillStyle = bladeColor;
+  for(let i=0;i<3;i++){
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.quadraticCurveTo(Dpx*0.15, -Dpx*0.05, Dpx*0.5, -Dpx*0.07);
+    ctx.quadraticCurveTo(Dpx*0.45, Dpx*0.12, 4, 6);
+    ctx.fill();
+    ctx.rotate(Math.PI*2/3);
+  }
+  // hub center
+  ctx.fillStyle = '#ffdf5d';
+  ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+// background scene
+function drawScene(totalTurbines, hubHeight_m, rotorDiameter_m, rotorRPM_est){
+  // clear
+  const W = canvas.width/deviceRatio, H = canvas.height/deviceRatio;
+  ctx.clearRect(0,0,W,H);
+
+  // sky gradient
+  const sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#8fbff7');
+  sky.addColorStop(1,'#071b2a');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0,0,W,H);
+
+  // ground
+  ctx.fillStyle = '#0b2a16';
+  ctx.fillRect(0, H*0.8, W, H*0.2);
+
+  // a simple horizon line
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.beginPath(); ctx.moveTo(0,H*0.8); ctx.lineTo(W,H*0.8); ctx.stroke();
+
+  // place turbines across width
+  const spacing = Math.max(120, W / Math.max(1,totalTurbines+1));
+  const baseY = H*0.8;
+  const centerXStart = spacing;
+  // convert physical hub height (m) to pixel height for drawing (scale)
+  // choose scale so that 200 m -> 200 px approx
+  const pxPerMeter = 1.4; // visual scale
+  const hubHeightPx = Math.max(40, hubHeight_m * pxPerMeter);
+
+  // rotor diameter in px
+  const Dpx = Math.max(30, rotorDiameter_m * 0.4);
+
+  for(let i=0;i<totalTurbines;i++){
+    const x = centerXStart + i*spacing;
+    drawTurbine(x, baseY, hubHeightPx, Dpx, rotorAngle);
+  }
+
+  // add some info overlay
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(10, 10, 260, 86);
+  ctx.fillStyle = '#e6eef8';
+  ctx.font = '13px Inter, Arial';
+  ctx.fillText(`Velocidad a 10 m: ${Number(el('windSpeed').value).toFixed(2)} m/s`, 18, 32);
+  ctx.fillText(`Velocidad en hub: ${Number(currentHubWindSpeed).toFixed(2)} m/s`, 18, 52);
+  ctx.fillText(`Número turbinas: ${totalTurbines}`, 18, 72);
+  ctx.fillText(`Diámetro rotor: ${rotorDiameter_m} m`, 18, 92);
+}
+
+/* animation loop */
+let lastTime = performance.now();
+let currentHubWindSpeed = Number(el('windSpeed').value);
+function animate(time){
+  const dt = (time - lastTime)/1000; lastTime = time;
+  // rotor angle increment depends on rotor tip speed ~ proportional to wind speed.
+  // We'll compute rotational angular speed proportional to v/hypot factor:
+  const v = currentHubWindSpeed;
+  // approximate relationship: RPM ~ k * v / D, choose k to look good
+  const D = Number(el('rotorDiameter').value);
+  const k = 12; // tuning constant
+  const rpm = (k * v / Math.max(1,D)); // crude rpm
+  const omega = rpm * 2*Math.PI / 60; // rad/s
+  rotorAngle += omega * dt;
+
+  // draw
+  const n = Number(el('nTurbines').value);
+  const hubH = Number(el('hubHeight').value);
+  const Dm = Number(el('rotorDiameter').value);
+  drawScene(n, hubH, Dm, rpm);
+
+  animId = requestAnimationFrame(animate);
+}
+animId = requestAnimationFrame(animate);
+
+/* ---------------------------
+   Main update: calculations & chart
+   --------------------------- */
+
+function onInputChange(){
+  // read inputs (already synced by event listeners)
+  const v_ref = Number(el('windSpeed').value); // at 10 m
+  const hubH = Number(el('hubHeight').value);
+  currentHubWindSpeed = windAtHeight(v_ref, hubH);
+  const D = Number(el('rotorDiameter').value);
+  const n = Number(el('nTurbines').value);
+  const Cp = Number(el('cp').value) / 100.0;
+  const eff = Number(el('efficiency').value) / 100.0;
+  const avail = Number(el('availability').value) / 100.0;
+  const co2f = Number(el('co2Factor').value);
+
+  // Instantaneous power per turbine (W)
+  const P_turbine_W = powerPerTurbine_W(currentHubWindSpeed, D, Cp, eff);
+  // total instantaneous power (W)
+  const P_total_W = P_turbine_W * n;
+
+  // Convert W -> kW and kW -> kWh/day etc.
+  const P_total_kW = P_total_W / 1000.0;
+
+  // daily energy assuming constant wind speed and availability factor:
+  const daily_kWh = P_total_kW * 24 * avail;
+  const monthly_kWh = daysInMonth.map(d => daily_kWh * d); // array per month
+  const annual_kWh = daily_kWh * 365;
+
+  // CO2 avoided: kg CO2 = energy_kWh * factor (kg/kWh)
+  const co2_annual_kg = annual_kWh * co2f;
+  const co2_annual_t = co2_annual_kg / 1000.0;
+
+  // update results box
+  el('resultsBox').innerText = `Potencia instantánea: ${(P_total_W/1e6).toFixed(3)} MW · Producción diaria: ${daily_kWh.toFixed(0)} kWh · mensual (promedio): ${(annual_kWh/12).toFixed(0)} kWh · anual: ${annual_kWh.toFixed(0)} kWh · CO₂ evitado anual: ${co2_annual_t.toFixed(2)} t`;
+
+  // quick values
+  el('quickValues').innerHTML = `Potencia por turbina: ${(P_turbine_W/1000).toFixed(1)} kW<br>Potencia total (instant): ${P_total_kW.toFixed(1)} kW<br>Producción diaria (total): ${daily_kWh.toFixed(0)} kWh`;
+
+  // update monthly chart
+  monthlyChart.data.datasets[0].data = monthly_kWh.map(v => Number(v.toFixed(0)));
+  monthlyChart.update('none');
+}
+
+// initialize with defaults
+resetDefaults();
+
+/* ---------------------------
+   CSV export (monthly)
+   --------------------------- */
+function downloadCSV(){
+  // create rows: Month, Days, kWh
+  const v_ref = Number(el('windSpeed').value);
+  const hubH = Number(el('hubHeight').value);
+  currentHubWindSpeed = windAtHeight(v_ref, hubH);
+  const D = Number(el('rotorDiameter').value);
+  const n = Number(el('nTurbines').value);
+  const Cp = Number(el('cp').value) / 100.0;
+  const eff = Number(el('efficiency').value) / 100.0;
+  const avail = Number(el('availability').value) / 100.0;
+  const P_turbine_W = powerPerTurbine_W(currentHubWindSpeed, D, Cp, eff);
+  const P_total_kW = (P_turbine_W * n) / 1000.0;
+  const daily_kWh = P_total_kW * 24 * avail;
+
+  const rows = [['Mes','Dias','Producción (kWh)']];
+  for(let i=0;i<12;i++){
+    const val = daily_kWh * daysInMonth[i];
+    rows.push([months[i], daysInMonth[i], Math.round(val)]);
+  }
+  // CSV text
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'produccion_eolica_mensual.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------------------------
+   Helper: keep chart responsive when container resizes
+   --------------------------- */
+const observer = new ResizeObserver(()=>{ monthlyChart.resize(); });
+observer.observe(document.querySelector('.chart-wrap'));
+
+/* expose for console */
+window.onInputChange = onInputChange;
+window.resetDefaults = resetDefaults;
+window.downloadCSV = downloadCSV;
+</script>
 </body>
 </html>
